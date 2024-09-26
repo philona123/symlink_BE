@@ -1,9 +1,11 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_socketio import SocketIO
 
 # Initialize the database
 db = SQLAlchemy()
+socketio = SocketIO()
 
 def create_app():
     app = Flask(__name__)
@@ -13,8 +15,8 @@ def create_app():
     
     # Initialize the database with the app
     db.init_app(app)
-
     migrate = Migrate(app, db)
+    socketio.init_app(app, cors_allowed_origins="*")
     
     # Import and register the routes (blueprints)
     from app.sessions.routes import sessions as sessions_blueprint
