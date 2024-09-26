@@ -10,7 +10,7 @@ A one stop solution for your privacy issues.
 
 ## Getting Started
 
-- Clone the repo and execute command `npm install`
+- Clone the repo
 - Activate the venv using the following command `source venv/bin/activate`
 - Install all dependencies using the following command `pip3 install -r requirements.txt`
 - Create a file named .env
