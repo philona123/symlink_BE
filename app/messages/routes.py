@@ -4,6 +4,9 @@ from app import db, socketio
 from flask_socketio import emit
 from app.sessions.model import Sessions
 from app.chats.model import Chats
+from app.ner.ner_prediction import get_prediction
+from app.utils import map_keys, reverse_map
+from app.llms import openai_util
 
 # Define a blueprint for the routes
 messages = Blueprint('messages', __name__)
@@ -48,5 +51,42 @@ def handle_send_message(data):
     db.session.add(message)
     db.session.commit()
 
-    # Broadcast the message to the room
     emit('receive_message', message.to_dict(), broadcast=True)
+
+    masked_text, mapped_entity = get_prediction(message_text)
+
+    created_message = Messages.query.filter_by(id=message.id).first()
+    created_message.masked_content = masked_text
+    db.session.commit()
+    entity_key_map = map_keys(mapped_entity)
+
+    gpt_response = openai_util.query_chatgpt(masked_text)
+
+    final_output = reverse_map(gpt_response, entity_key_map)
+
+    reply = Messages(chat_id=chat.id, content=final_output, direction='RECEIVED', sent_by='MODEL')
+    db.session.add(reply)
+    db.session.commit()
+
+    # Broadcast the message to the room
+    emit('receive_message', reply.to_dict(), broadcast=True)
+    
+
+@socketio.on('get_history')
+def get_chat_history(data):
+    chat_id = data.get('chat_id')
+    session_id = data.get('session_id')
+
+    if not session_id or not chat_id:
+        return emit('error', {'error': 'Invalid data'})
+    
+    user = Sessions.query.filter_by(id=session_id).first()
+    chat = Chats.query.filter_by(id=chat_id).first()
+
+    if not chat or not user:
+        return emit('error', {'error': 'Invalid user or chat'})
+    
+    messages = Messages.query.filter_by(chat_id=chat.id).all()
+    formatted_messages = [message.to_dict() for message in messages]
+
+    emit('chat_history', formatted_messages, broadcast=True) 

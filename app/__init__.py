@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
@@ -33,5 +33,9 @@ def create_app():
 
     from app.ocr.routes import ocr as ocr_blueprint
     app.register_blueprint(ocr_blueprint)
+
+    @app.route('/')
+    def get_index():
+        return render_template("index.html")
 
     return app
