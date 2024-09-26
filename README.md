@@ -24,3 +24,9 @@ A one stop solution for your privacy issues.
 - To run migrations, use `flask db upgrade`
 - Run the server using `python3 app.py`
 - Service should be up and running in http://localhost:5000.
+
+## Migration Commands
+
+- To generate new migration: `flask db migrate -m "<migration_file_name>"`
+- To run the migration: `flask db upgrade`
+- To rollback a migration: `flask db downgrade`
