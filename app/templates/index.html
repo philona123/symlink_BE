@@ -39,6 +39,12 @@
           document.getElementById("current-room").textContent = room_name;
           document.getElementById("messages").innerHTML = ""; // Clear previous messages
         }
+
+        socket.emit("get_history", {
+          chat_id: room_name,
+          session_id:
+            "26cc129d98187e7829712b767a0914919817f43aaf149c4689bad87c7ed00c9e",
+        });
       }
 
       function sendMessage() {
@@ -62,10 +68,11 @@
       socket.on("chat_history", function (messages) {
         var messagesList = document.getElementById("messages");
         messagesList.innerHTML = ""; // Clear the previous messages
+        console.log(JSON.stringify(messages));
 
         messages.forEach(function (message) {
           var li = document.createElement("li");
-          li.textContent = `${message.username} (${message.timestamp}): ${message.message}`;
+          li.textContent = `${message.chat_id} (${message.send_date}): ${message.content}`;
           messagesList.appendChild(li);
         });
       });
