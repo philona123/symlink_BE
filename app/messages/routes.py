@@ -48,16 +48,13 @@ def handle_send_message(data):
 
     # Create the message in the database
     message = Messages(chat_id=chat.id, content=message_text, direction='SENT', sent_by=user.id)
+    masked_text, mapped_entity = get_prediction(message_text)
+    message.masked_content = masked_text
     db.session.add(message)
     db.session.commit()
 
     emit('receive_message', message.to_dict(), broadcast=True)
-
-    masked_text, mapped_entity = get_prediction(message_text)
-
-    created_message = Messages.query.filter_by(id=message.id).first()
-    created_message.masked_content = masked_text
-    db.session.commit()
+    
     entity_key_map = map_keys(mapped_entity)
 
     gpt_response = openai_util.query_chatgpt(masked_text)
