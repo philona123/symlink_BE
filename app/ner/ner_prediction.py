@@ -15,7 +15,6 @@ def get_prediction(user_msg):
     results = ner_org.get_results(cleaned_text)
     results.update(ner_personal_info.get_results(cleaned_text))
     #mapped_entities = {key : eval(faker_providers.get(value)) for key, value in results.items() if faker_providers.get(value)}
-    
     mapped_entities = [{"entity": key, "identifier": f"ENTITY{idx+1}"} for idx, key in enumerate(results)]
     for entity_details in mapped_entities:
         real_entity, masked_entity = entity_details.values()

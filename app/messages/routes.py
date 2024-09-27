@@ -5,8 +5,12 @@ from flask_socketio import emit
 from app.sessions.model import Sessions
 from app.chats.model import Chats
 from app.ner.ner_prediction import get_prediction
-from app.utils import map_keys, reverse_map
+from app.utils import map_keys, reverse_map_gpt_resp, mask_user_message, clean_white_space
 from app.llms import openai_util
+from app.model import model_util
+from json import loads
+from re import findall
+from string import ascii_uppercase
 
 # Define a blueprint for the routes
 messages = Blueprint('messages', __name__)
@@ -47,27 +51,29 @@ def handle_send_message(data):
         return emit('error', {'error': 'Invalid user or chat'})
 
     # Create the message in the database
+    print("message from user/n", message_text)
     message = Messages(chat_id=chat.id, content=message_text, direction='SENT', sent_by=user.id)
     db.session.add(message)
     db.session.commit()
-
+    emit('recieve_message','hello test',broadcast=True)
     emit('receive_message', message.to_dict(), broadcast=True)
-
-    masked_text, mapped_entity = get_prediction(message_text)
-
+    # masked_text, mapped_entity = get_prediction(message_text)
+    response = model_util.query(message_text)
+    print("raw response-:", response)
+    pattern = r"'([^']+)'"
+    matches = findall(pattern, clean_white_space(response))
+    entity_details = {f"ENTITY_{alpha_id}": match for match, alpha_id in  zip(matches, list(ascii_uppercase))}
+    print("entity_details", entity_details)
+    masked_text = mask_user_message(message_text, entity_details)
+    print("masked_text", masked_text) # PR_DELETE
     created_message = Messages.query.filter_by(id=message.id).first()
     created_message.masked_content = masked_text
     db.session.commit()
-    entity_key_map = map_keys(mapped_entity)
-
     gpt_response = openai_util.query_chatgpt(masked_text)
-
-    final_output = reverse_map(gpt_response, entity_key_map)
-
+    final_output = reverse_map_gpt_resp(gpt_response, entity_details)
     reply = Messages(chat_id=chat.id, content=final_output, direction='RECEIVED', sent_by='MODEL')
     db.session.add(reply)
     db.session.commit()
-
     # Broadcast the message to the room
     emit('receive_message', reply.to_dict(), broadcast=True)
     

@@ -1,5 +1,6 @@
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 from app.utils import clean_entity
+import torch
 
 
 class CustomTransformerNER():
@@ -11,11 +12,12 @@ class CustomTransformerNER():
         self.supported_entities = kwargs.get("labels")
 
     def get_results(self, text, confidence=0.90):
-        ner_results = self.ner_pipeline(text)
+        with torch.no_grad():
+            ner_results = self.ner_pipeline(text)
         ner_results = [dict(res, idx=idx) for idx, res in enumerate(ner_results)]
         found = []
         final_results = {}
-        final_results_with_conf = []
+        # final_results_with_conf = []
         for idx, entity in enumerate(ner_results):
             class_ = entity['entity_group']
             if class_ not in self.supported_entities:
