@@ -1,10 +1,11 @@
 from openai import OpenAI
 import json
+import os
 
 # Set your OpenAI API key
 client = OpenAI(
     # This is the default and can be omitted
-    api_key='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')
+    api_key=os.getenv("OPEN_AI_KEY"))
 
 def query_chatgpt(prompt, model="chatgpt-4o-latest", max_tokens=500, temperature=0.7):
     """
